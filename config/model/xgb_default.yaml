@@ -10,4 +10,4 @@ seed: 42
 objective: "binary:logistic"
 eval_metric: auc
 early_stopping_rounds: 10
-max_evals: 100
+max_evals: 20  # default; override with `model.max_evals=100` for production runs

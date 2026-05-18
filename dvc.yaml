@@ -1,0 +1,35 @@
+stages:
+  process_data:
+    cmd: python -m training.src.process
+    deps:
+      - config/main.yaml
+      - config/process
+      - data/raw/Telco-Customer-Churn.csv
+      - training/src/process.py
+    outs:
+      - data/processed:
+          persist: true
+
+  train_model:
+    cmd: python -m training.src.train_model
+    deps:
+      - config/main.yaml
+      - config/model
+      - data/processed
+      - training/src/helper.py
+      - training/src/train_model.py
+    outs:
+      - models/xgboost:
+          persist: true
+
+  evaluate_model:
+    cmd: python -m training.src.evaluate_model
+    deps:
+      - config/main.yaml
+      - data/processed
+      - models/xgboost
+      - training/src/evaluate_model.py
+      - training/src/helper.py
+    metrics:
+      - metrics.csv:
+          cache: false

@@ -1,0 +1,87 @@
+schema: '2.0'
+stages:
+  process_data:
+    cmd: python -m training.src.process
+    deps:
+    - path: config/main.yaml
+      hash: md5
+      md5: a3a7c4485885cd498b82edb91d6d9e7a
+      size: 904
+    - path: config/process
+      hash: md5
+      md5: ecc9661b0c65af1aa376eeecac9aa140.dir
+      size: 474
+      nfiles: 2
+    - path: data/raw/Telco-Customer-Churn.csv
+      hash: md5
+      md5: 3b0bfab28a8101b4e4fdd08025a5c235
+      size: 970457
+    - path: training/src/process.py
+      hash: md5
+      md5: 7e35728d928eacc28df30ce71ef1f4fd
+      size: 3023
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: e8f74ce9016b7aedb0abb1c5034004b7.dir
+      size: 939063
+      nfiles: 5
+  train_model:
+    cmd: python -m training.src.train_model
+    deps:
+    - path: config/main.yaml
+      hash: md5
+      md5: a3a7c4485885cd498b82edb91d6d9e7a
+      size: 904
+    - path: config/model
+      hash: md5
+      md5: f94eb0b9479c95b5b45b75e4663d2296.dir
+      size: 471
+      nfiles: 1
+    - path: data/processed
+      hash: md5
+      md5: e8f74ce9016b7aedb0abb1c5034004b7.dir
+      size: 939063
+      nfiles: 5
+    - path: training/src/helper.py
+      hash: md5
+      md5: 131ce251691c033b4ca0cf6f95826e47
+      size: 1548
+    - path: training/src/train_model.py
+      hash: md5
+      md5: f710c853f818a0ebf2687604bb362aa0
+      size: 4262
+    outs:
+    - path: models/xgboost
+      hash: md5
+      md5: a408e82ffcbffec7c9290ba700670fdc
+      size: 29518
+  evaluate_model:
+    cmd: python -m training.src.evaluate_model
+    deps:
+    - path: config/main.yaml
+      hash: md5
+      md5: a3a7c4485885cd498b82edb91d6d9e7a
+      size: 904
+    - path: data/processed
+      hash: md5
+      md5: e8f74ce9016b7aedb0abb1c5034004b7.dir
+      size: 939063
+      nfiles: 5
+    - path: models/xgboost
+      hash: md5
+      md5: a408e82ffcbffec7c9290ba700670fdc
+      size: 29518
+    - path: training/src/evaluate_model.py
+      hash: md5
+      md5: 336d49aea40943753a20330905978df4
+      size: 1710
+    - path: training/src/helper.py
+      hash: md5
+      md5: 131ce251691c033b4ca0cf6f95826e47
+      size: 1548
+    outs:
+    - path: metrics.csv
+      hash: md5
+      md5: d0d24479fa680bfeba35c47b603c09ab
+      size: 121
