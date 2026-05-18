@@ -1,5 +1,5 @@
 [project]
-name = "churn-mlops"
+name = "telco-customer-churn-mlops"
 version = "0.1.0"
 description = "End-to-end MLOps pipeline for Telco Customer Churn"
 authors = [{name = "Vignesh Sabapathi", email = "vignesh.sabapathi@gmail.com"}]
