@@ -14,7 +14,7 @@ numpy==1.26.4
 pandas==2.2.2
 pandera==0.18.3
 patsy==0.5.6
-scikit-learn==1.4.2
+scikit-learn>=1.4.2,<2.0.0
 xgboost==2.0.3
 dvc==3.50.0
 pydantic==2.7.4
@@ -27,6 +27,7 @@ streamlit==1.33.0
 pytest==8.2.0
 pytest-steps==1.8.0
 requests==2.32.3
+deepchecks==0.19.1
 
 # --- dev: lint + hooks ---
 pre-commit==3.7.0
