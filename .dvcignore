@@ -1,0 +1,6 @@
+# Patterns DVC should ignore when hashing / tracking
+notebooks/
+docs/
+*.ipynb
+.pytest_cache/
+__pycache__/

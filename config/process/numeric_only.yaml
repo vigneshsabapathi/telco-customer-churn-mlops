@@ -1,0 +1,8 @@
+target: Churn
+drop:
+  - customerID
+features:
+  - tenure
+  - MonthlyCharges
+  - TotalCharges
+  - SeniorCitizen

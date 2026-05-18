@@ -1,0 +1,77 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.envrc
+.venv
+venv/
+ENV/
+env/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Project data (DVC-tracked)
+/data/raw/*
+!/data/raw/.gitkeep
+/data/processed/*
+!/data/processed/.gitkeep
+/data/final/*
+!/data/final/.gitkeep
+/models/*
+!/models/.gitkeep
+*.dvc.tmp
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Bento
+bentoml/
+*.bento
+
+# Hydra
+outputs/
+multirun/
+
+# Misc
+*.log

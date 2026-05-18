@@ -1,0 +1,37 @@
+defaults:
+  - process: with_contract
+  - model: xgb_default
+  - _self_
+
+raw:
+  path: data/raw/Telco-Customer-Churn.csv
+
+processed:
+  dir: data/processed
+  X_train: {name: X_train.csv, path: ${processed.dir}/X_train.csv}
+  X_test:  {name: X_test.csv,  path: ${processed.dir}/X_test.csv}
+  y_train: {name: y_train.csv, path: ${processed.dir}/y_train.csv}
+  y_test:  {name: y_test.csv,  path: ${processed.dir}/y_test.csv}
+
+final:
+  dir: data/final
+  name: final.csv
+  path: ${final.dir}/${final.name}
+
+model:
+  dir: models
+  name: xgboost
+  path: ${model.dir}/${model.name}
+
+split:
+  test_size: 0.2
+  random_state: 42
+  stratify: true
+
+tracking:
+  experiment_name: telco-churn
+  remote: false
+  remote_uri: ""
+  # Credentials, when remote=true, must come from environment:
+  #   MLFLOW_TRACKING_USERNAME
+  #   MLFLOW_TRACKING_PASSWORD
