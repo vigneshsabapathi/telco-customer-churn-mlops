@@ -50,15 +50,25 @@ htmlcov/
 # Jupyter
 .ipynb_checkpoints/
 
-# Project data (DVC-tracked)
+# Project data (DVC-tracked).
+# DVC creates per-directory .gitignore files for actual data;
+# we keep .gitkeep + .dvc pointer files git-tracked.
 /data/raw/*
 !/data/raw/.gitkeep
+!/data/raw/*.dvc
+!/data/raw/.gitignore
 /data/processed/*
 !/data/processed/.gitkeep
+!/data/processed/*.dvc
+!/data/processed/.gitignore
 /data/final/*
 !/data/final/.gitkeep
+!/data/final/*.dvc
+!/data/final/.gitignore
 /models/*
 !/models/.gitkeep
+!/models/*.dvc
+!/models/.gitignore
 *.dvc.tmp
 
 # MLflow
