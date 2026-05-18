@@ -2,7 +2,7 @@
 name = "churn-mlops"
 version = "0.1.0"
 description = "End-to-end MLOps pipeline for Telco Customer Churn"
-authors = [{name = "Kevin Raj", email = "kevinraj20@gmail.com"}]
+authors = [{name = "Vignesh Sabapathi", email = "vignesh.sabapathi@gmail.com"}]
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
