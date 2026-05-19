@@ -52,13 +52,11 @@ htmlcov/
 
 # Project data (DVC-tracked).
 # DVC creates per-directory .gitignore files for actual data;
-# we keep .gitkeep + .dvc pointer files git-tracked.
+# we keep .dvc pointer files git-tracked.
 /data/raw/*
-!/data/raw/.gitkeep
 !/data/raw/*.dvc
 !/data/raw/.gitignore
 /data/processed/*
-!/data/processed/.gitkeep
 !/data/processed/*.dvc
 !/data/processed/.gitignore
 /data/final/*
@@ -66,10 +64,14 @@ htmlcov/
 !/data/final/*.dvc
 !/data/final/.gitignore
 /models/*
-!/models/.gitkeep
 !/models/*.dvc
 !/models/.gitignore
 *.dvc.tmp
+
+# DVC writes metrics.csv (cache: false) on every `dvc repro` — XGBoost has
+# cross-platform float nondeterminism, so committing it produces noisy diffs.
+# CI publishes metrics via the deploy gate; locally treat it as transient.
+/metrics.csv
 
 # MLflow
 mlruns/

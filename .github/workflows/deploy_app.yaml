@@ -35,10 +35,29 @@ jobs:
           curl -sL -o data/raw/Telco-Customer-Churn.csv \
             https://raw.githubusercontent.com/IBM/telco-customer-churn-on-icp4d/master/data/Telco-Customer-Churn.csv
 
-      - name: Train model
+      - name: Train model (max_evals=100 — production hyperopt budget)
+        # The repo default is max_evals=20 for fast local iteration. Deploy
+        # runs the full TPE budget so the surrogate actually kicks in (TPE
+        # uses n_startup_jobs=20 of uniform random sampling before the
+        # surrogate is consulted, so <=20 evals is essentially random search).
         run: |
           python -m training.src.process
-          python -m training.src.train_model
+          python -m training.src.train_model model.max_evals=100
+
+      - name: Evaluate model (production gate)
+        # Fail the deploy if ROC-AUC drops below the documented 0.78 floor.
+        # This is the only baseline gate between training and shipping.
+        run: |
+          python -m training.src.evaluate_model
+          python - <<'PY'
+          import sys
+          import pandas as pd
+          df = pd.read_csv("metrics.csv").set_index("metric")["value"]
+          auc = float(df["roc_auc"])
+          print(f"deploy gate: roc_auc={auc:.4f}")
+          if auc < 0.78:
+              sys.exit(f"ROC-AUC {auc:.4f} below production floor 0.78 — refusing to ship")
+          PY
 
       - name: Save model to BentoML store
         run: python application/src/save_model_to_bentoml.py
