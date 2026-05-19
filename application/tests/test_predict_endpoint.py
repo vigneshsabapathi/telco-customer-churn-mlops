@@ -13,18 +13,39 @@ To run against a Dockerized container (Phase 7):
 
 To target a different host:
     CHURN_API_URL=http://my-host:3000/predict pytest ...
+
+# Why the directional assertions (== 1 / == 0) are intentional
+
+The high-risk and low-risk profiles are designed to be **unambiguous** —
+Month-to-month + tenure=1 + no add-ons + Electronic check is a textbook
+churn-likely customer; Two-year + tenure=60 + all add-ons + Bank transfer
+is a textbook retained customer. Any properly-trained classifier with
+ROC-AUC ≥ 0.78 (the gate enforced by test_evaluate_model.test_metrics_meet_baselines)
+should reliably distinguish them. If a retrain flips either assertion,
+that's a real signal worth catching — either the model degraded or the
+training data drifted in a way that inverted the model's interpretation
+of these features. The smoke test serves as a directional contract, not
+a flaky-and-brittle assertion.
 """
 
 from __future__ import annotations
 
 import os
+from urllib.parse import urlparse
 
 import pytest
 import requests
 
-API_BASE = os.environ.get("CHURN_API_BASE", "http://localhost:3000")
+API_BASE = os.environ.get("CHURN_API_BASE", "http://localhost:3000").rstrip(
+    "/"
+)
 PREDICT_URL = os.environ.get("CHURN_API_URL", f"{API_BASE}/predict")
-HEALTH_URL = f"{API_BASE}/healthz"
+# Derive HEALTH_URL from PREDICT_URL's host:port so that setting only
+# CHURN_API_URL (e.g. pointing at a remote container) doesn't leave HEALTH_URL
+# pinned to localhost:3000 — which would cause the autouse fixture to
+# spuriously skip the suite even when the remote server is reachable.
+_predict_parts = urlparse(PREDICT_URL)
+HEALTH_URL = f"{_predict_parts.scheme}://{_predict_parts.netloc}/healthz"
 
 # Two test profiles deliberately chosen to span opposite ends of the
 # churn-risk spectrum based on Telco domain knowledge:

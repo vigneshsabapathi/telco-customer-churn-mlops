@@ -16,7 +16,16 @@ include:
 exclude:
   - "**/__pycache__/**"
   - "**/.pytest_cache/**"
-  - "tests/**"
+  # Anchored to project test dirs (was 'tests/**' which would also drop a
+  # future nested 'application/src/utils/tests/' if anyone added one).
+  - "application/tests/**"
+  - "training/tests/**"
+  # These two ship with the runtime image but aren't entry points and
+  # carry dependencies (streamlit, hydra-job-runner) we deliberately leave
+  # out of python.packages — keep them out of the bento so a stray import
+  # inside the container doesn't ImportError at runtime.
+  - "application/src/create_app.py"
+  - "application/src/save_model_to_bentoml.py"
 
 python:
   # Mirror the runtime subset of requirements.txt — keep the image lean.
@@ -28,7 +37,7 @@ python:
     - "numpy==1.26.4"
     - "pandas==2.2.2"
     - "patsy==0.5.6"
-    - "scikit-learn>=1.4,<1.7"
+    - "scikit-learn>=1.4.2,<1.7.0"
     - "xgboost==2.0.3"
     - "pydantic==2.7.4"
     - "bentoml==1.2.19"
