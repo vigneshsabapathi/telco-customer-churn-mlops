@@ -9,6 +9,7 @@ from pathlib import Path
 
 import hydra
 import pandas as pd
+from hydra.utils import to_absolute_path
 from omegaconf import DictConfig
 from patsy import dmatrix
 from sklearn.model_selection import train_test_split
@@ -20,6 +21,10 @@ def load_raw(raw_path: str) -> pd.DataFrame:
 
 
 def clean(df: pd.DataFrame, drop_cols: list, target: str) -> pd.DataFrame:
+    # Defensive copy — never mutate the caller's frame. Some pandas operations
+    # below (assignment via df[col] = ...) would otherwise share blocks with
+    # the input under non-CoW pandas.
+    df = df.copy()
     df = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
     # TotalCharges arrives as object dtype because ~11 new customers have
@@ -31,12 +36,26 @@ def clean(df: pd.DataFrame, drop_cols: list, target: str) -> pd.DataFrame:
     # so patsy one-hot-encodes it consistently with the other Yes/No columns.
     df["SeniorCitizen"] = df["SeniorCitizen"].astype(str)
 
+    # Defensive: surface a clear error if the target has unexpected values
+    # before .astype(int) raises a confusing IntCastingNaNError downstream.
+    target_values = set(df[target].dropna().unique())
+    expected = {"Yes", "No"}
+    if not target_values <= expected:
+        raise ValueError(
+            f"target column {target!r} has unexpected values: "
+            f"{target_values - expected}; expected only {expected}"
+        )
     df[target] = df[target].map({"Yes": 1, "No": 0}).astype(int)
     return df
 
 
 def rename_patsy_columns(X: pd.DataFrame) -> pd.DataFrame:
-    """patsy emits `Col[T.value]` for categorical levels — flatten to `Col_value`."""
+    """patsy emits `Col[T.value]` for categorical levels — flatten to `Col_value`.
+
+    Spaces and parens inside level names (e.g. `MultipleLines_No phone service`)
+    are intentionally preserved — XGBoost 2.x and BentoML/Pydantic tolerate
+    them, and the Phase 6 service round-trips these column names successfully.
+    """
     X = X.copy()
     X.columns = (
         X.columns.str.replace(r"\[T\.", "_", regex=True)
@@ -65,15 +84,16 @@ def split_and_save(
         random_state=cfg.split.random_state,
         stratify=y if cfg.split.stratify else None,
     )
-    Path(cfg.processed.dir).mkdir(parents=True, exist_ok=True)
-    X_train.to_csv(cfg.processed.X_train.path, index=False)
-    X_test.to_csv(cfg.processed.X_test.path, index=False)
-    y_train.to_csv(cfg.processed.y_train.path, index=False)
-    y_test.to_csv(cfg.processed.y_test.path, index=False)
+    out_dir = Path(to_absolute_path(cfg.processed.dir))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    X_train.to_csv(to_absolute_path(cfg.processed.X_train.path), index=False)
+    X_test.to_csv(to_absolute_path(cfg.processed.X_test.path), index=False)
+    y_train.to_csv(to_absolute_path(cfg.processed.y_train.path), index=False)
+    y_test.to_csv(to_absolute_path(cfg.processed.y_test.path), index=False)
 
 
 def process_data(cfg: DictConfig) -> None:
-    raw = load_raw(cfg.raw.path)
+    raw = load_raw(to_absolute_path(cfg.raw.path))
     cleaned = clean(raw, list(cfg.process.drop), cfg.process.target)
     X = encode_features(cleaned, list(cfg.process.features))
     y = cleaned[cfg.process.target]

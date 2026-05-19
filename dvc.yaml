@@ -7,8 +7,7 @@ stages:
       - data/raw/Telco-Customer-Churn.csv
       - training/src/process.py
     outs:
-      - data/processed:
-          persist: true
+      - data/processed
 
   train_model:
     cmd: python -m training.src.train_model
@@ -19,8 +18,7 @@ stages:
       - training/src/helper.py
       - training/src/train_model.py
     outs:
-      - models/xgboost:
-          persist: true
+      - models/xgboost
 
   evaluate_model:
     cmd: python -m training.src.evaluate_model
