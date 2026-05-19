@@ -31,6 +31,10 @@ model:
   name: xgboost
   path: ${model.dir}/${model.name}
 
+# Path where evaluate_model.py writes the (metric, value) CSV. Tests can
+# override via `+metrics_path=...` to redirect into tmp dirs.
+metrics_path: metrics.csv
+
 split:
   test_size: 0.2
   random_state: 42

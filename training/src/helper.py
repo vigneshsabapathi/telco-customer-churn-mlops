@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 
 import mlflow
+import mlflow.xgboost
 from omegaconf import DictConfig
 
 
@@ -23,6 +24,12 @@ class BaseLogger:
         self._started = False
 
     def start(self) -> "BaseLogger":
+        # Idempotent — multiple start() calls in the same process are a no-op
+        # after the first. Prevents redundant set_experiment() side effects
+        # when train + evaluate run in the same process.
+        if self._started:
+            return self
+
         tracking = self.cfg.tracking
         if tracking.remote:
             for var in (
@@ -46,4 +53,6 @@ class BaseLogger:
         mlflow.log_metrics(metrics)
 
     def log_model(self, model, name: str) -> None:
-        mlflow.sklearn.log_model(model, name)
+        # mlflow.xgboost flavor (not sklearn) so the auto-inferred
+        # requirements include xgboost — sklearn flavor would omit it.
+        mlflow.xgboost.log_model(model, name)

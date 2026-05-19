@@ -29,7 +29,7 @@ def cfg(tmp_path_factory):
             overrides=[
                 f"model.dir={tmp_models.as_posix()}",
                 f"model.max_evals={TEST_MAX_EVALS}",
-                f"+metrics_path={tmp_metrics.as_posix()}",
+                f"metrics_path={tmp_metrics.as_posix()}",
             ],
         )
     return cfg

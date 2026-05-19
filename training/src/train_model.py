@@ -1,4 +1,15 @@
-"""Train an XGBoost classifier on processed Telco data via hyperopt search."""
+"""Train an XGBoost classifier on processed Telco data via hyperopt search.
+
+Cleanliness contract: the held-out test set in `cfg.processed.X_test` is
+NEVER touched here — neither for model selection nor for early stopping.
+Hyperopt searches on (X_tr, y_tr) with early-stopping against a validation
+split carved out of X_train. evaluate_model.py is the only consumer of the
+test set.
+
+This module also writes the MLflow run-id to `cfg.model.dir/mlflow_run_id.txt`
+so evaluate_model.py can attach its metrics to the same run (rather than
+opening a separate orphan run).
+"""
 
 from __future__ import annotations
 
@@ -9,19 +20,21 @@ import joblib
 import mlflow
 import numpy as np
 import pandas as pd
+from hydra.utils import to_absolute_path
 from hyperopt import STATUS_OK, Trials, fmin, hp, tpe
 from omegaconf import DictConfig
 from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 
 from training.src.helper import BaseLogger
 
+# Carve a hyperopt validation set out of X_train. Keeps test untouched.
+_HYPEROPT_VAL_FRACTION = 0.2
+
 
 def _build_space(model_cfg: DictConfig) -> dict:
-    """Translate the YAML hyperopt config into a hyperopt search space.
-
-    The YAML uses `{low, high, q}` triples for quniform and `{low, high}` for uniform.
-    """
+    """Translate the YAML hyperopt config into a hyperopt search space."""
 
     def _one(spec, name):
         low, high = float(spec.low), float(spec.high)
@@ -46,8 +59,12 @@ def _build_space(model_cfg: DictConfig) -> dict:
     }
 
 
-def _make_objective(X_train, y_train, X_test, y_test, fixed: dict):
-    """Closure that hyperopt minimizes — returns negative ROC-AUC on test set."""
+def _make_objective(X_tr, y_tr, X_val, y_val, fixed: dict):
+    """Closure hyperopt minimizes — fits on tr, early-stops on val.
+
+    Note: test set is NOT passed. Model selection and early stopping both
+    use the validation split. Test metrics happen in evaluate_model.
+    """
 
     def objective(params):
         # hp.quniform yields floats; cast int-valued params back.
@@ -65,23 +82,33 @@ def _make_objective(X_train, y_train, X_test, y_test, fixed: dict):
             verbosity=0,
         )
         model.fit(
-            X_train,
-            y_train,
-            eval_set=[(X_test, y_test)],
+            X_tr,
+            y_tr,
+            eval_set=[(X_val, y_val)],
             verbose=False,
         )
-        proba = model.predict_proba(X_test)[:, 1]
-        auc = roc_auc_score(y_test, proba)
+        proba = model.predict_proba(X_val)[:, 1]
+        auc = roc_auc_score(y_val, proba)
         return {"loss": -auc, "status": STATUS_OK, "model": model, "auc": auc}
 
     return objective
 
 
 def train(cfg: DictConfig) -> None:
-    X_train = pd.read_csv(cfg.processed.X_train.path)
-    X_test = pd.read_csv(cfg.processed.X_test.path)
-    y_train = pd.read_csv(cfg.processed.y_train.path).squeeze()
-    y_test = pd.read_csv(cfg.processed.y_test.path).squeeze()
+    X_train = pd.read_csv(to_absolute_path(cfg.processed.X_train.path))
+    y_train = pd.read_csv(
+        to_absolute_path(cfg.processed.y_train.path)
+    ).squeeze()
+
+    # Carve out validation set for hyperopt. Stratified so class balance
+    # is preserved (~26% positive on Telco). Test set is untouched here.
+    X_tr, X_val, y_tr, y_val = train_test_split(
+        X_train,
+        y_train,
+        test_size=_HYPEROPT_VAL_FRACTION,
+        random_state=int(cfg.split.random_state),
+        stratify=y_train,
+    )
 
     fixed = {
         "n_estimators": int(cfg.model.n_estimators),
@@ -91,10 +118,10 @@ def train(cfg: DictConfig) -> None:
         "seed": int(cfg.model.seed),
     }
     space = _build_space(cfg.model)
-    objective = _make_objective(X_train, y_train, X_test, y_test, fixed)
+    objective = _make_objective(X_tr, y_tr, X_val, y_val, fixed)
 
     logger = BaseLogger(cfg).start()
-    with mlflow.start_run():
+    with mlflow.start_run(run_name=f"{cfg.model.name}-train") as run:
         trials = Trials()
         best_params = fmin(
             fn=objective,
@@ -111,14 +138,20 @@ def train(cfg: DictConfig) -> None:
         best_model = best_trial["model"]
 
         logger.log_params({**best_params, **fixed})
-        logger.log_metrics({"best_roc_auc": best_trial["auc"]})
+        # NB: best_val_roc_auc is on the *internal* validation split. The
+        # honest test-set numbers land later in evaluate_model.py.
+        logger.log_metrics({"best_val_roc_auc": best_trial["auc"]})
 
-        Path(cfg.model.dir).mkdir(parents=True, exist_ok=True)
-        joblib.dump(best_model, cfg.model.path)
+        model_dir = Path(to_absolute_path(cfg.model.dir))
+        model_dir.mkdir(parents=True, exist_ok=True)
+        joblib.dump(best_model, to_absolute_path(cfg.model.path))
         logger.log_model(best_model, cfg.model.name)
 
+        # Persist run id so evaluate_model.py can attach to the same run.
+        (model_dir / "mlflow_run_id.txt").write_text(run.info.run_id)
+
     print(
-        f"train: best_auc={best_trial['auc']:.4f}, "
+        f"train: best_val_auc={best_trial['auc']:.4f}, "
         f"evals={len(trials.results)}, "
         f"saved={cfg.model.path}"
     )

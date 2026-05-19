@@ -11,7 +11,6 @@ Contract under test:
 
 from __future__ import annotations
 
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -108,7 +107,8 @@ def test_log_metrics_delegates_to_mlflow(mock_mlflow):
 
 
 @patch("training.src.helper.mlflow")
-def test_log_model_uses_sklearn_flavor(mock_mlflow):
+def test_log_model_uses_xgboost_flavor(mock_mlflow):
+    """mlflow.xgboost (not sklearn) — so xgboost lands in auto-inferred reqs."""
     from training.src.helper import BaseLogger
 
     fake_model = MagicMock()
@@ -116,12 +116,12 @@ def test_log_model_uses_sklearn_flavor(mock_mlflow):
     logger.start()
     logger.log_model(fake_model, "xgboost")
 
-    mock_mlflow.sklearn.log_model.assert_called_once_with(
+    mock_mlflow.xgboost.log_model.assert_called_once_with(
         fake_model, "xgboost"
     )
 
 
-def test_credentials_never_read_from_config():
+def test_credentials_never_read_from_config(monkeypatch):
     """Defensive: even if the cfg somehow carries creds, the logger must ignore them.
 
     This is the chapter-15 hardening — config files must not be a credential channel.
@@ -131,9 +131,10 @@ def test_credentials_never_read_from_config():
     cfg.tracking.MLFLOW_TRACKING_USERNAME = "should_be_ignored"
     cfg.tracking.MLFLOW_TRACKING_PASSWORD = "should_be_ignored"
 
-    # No env vars set:
-    os.environ.pop("MLFLOW_TRACKING_USERNAME", None)
-    os.environ.pop("MLFLOW_TRACKING_PASSWORD", None)
+    # No env vars set (monkeypatch reverts at test exit; os.environ.pop would
+    # leak across tests).
+    monkeypatch.delenv("MLFLOW_TRACKING_USERNAME", raising=False)
+    monkeypatch.delenv("MLFLOW_TRACKING_PASSWORD", raising=False)
 
     from training.src.helper import BaseLogger
 
