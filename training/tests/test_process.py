@@ -125,11 +125,20 @@ def test_clean_drops_exactly_eleven_rows(cfg):
 
 
 def test_rename_handles_bracketed_patsy_columns():
-    """Pure function test — verifies the regex without needing real data."""
+    """Pure function test — verifies the regex without needing real data.
+
+    Covers both forms patsy emits:
+    - `Col[T.value]` (treatment-coded categorical, most common)
+    - `Col[value]`   (bare bracketed form, second .replace() branch)
+    """
     df = pd.DataFrame(
         {
             "Contract[T.One year]": [1, 0],
             "PaymentMethod[T.Mailed check]": [0, 1],
+            "OtherCol[bareform]": [
+                1,
+                0,
+            ],  # bare bracket — exercises the 2nd .replace
             "tenure": [12, 24],  # numeric — unchanged
         }
     )
@@ -137,6 +146,7 @@ def test_rename_handles_bracketed_patsy_columns():
     assert list(out.columns) == [
         "Contract_One year",
         "PaymentMethod_Mailed check",
+        "OtherCol_bareform",
         "tenure",
     ]
 

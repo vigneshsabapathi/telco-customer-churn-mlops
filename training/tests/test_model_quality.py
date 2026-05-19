@@ -30,13 +30,21 @@ TEST_MAX_EVALS = 5
 def cfg(tmp_path_factory):
     tmp_models = tmp_path_factory.mktemp("models")
     with initialize(version_base=None, config_path="../../config"):
-        return compose(
+        cfg = compose(
             config_name="main",
             overrides=[
                 f"model.dir={tmp_models.as_posix()}",
+                # Override model.path explicitly so a future change to the
+                # interpolation in main.yaml can't accidentally let test
+                # training corrupt the project's tracked models/xgboost.
+                f"model.path={tmp_models.as_posix()}/xgboost",
                 f"model.max_evals={TEST_MAX_EVALS}",
             ],
         )
+        assert tmp_models.as_posix() in str(
+            cfg.model.path
+        ), "test model output must live in tmp; cfg.model.path drift detected"
+        return cfg
 
 
 @pytest.fixture(scope="module")
@@ -78,28 +86,36 @@ def test_single_dataset_performance(trained_model, test_ds):
     )
 
 
-def test_weak_segments_analysis_runs(trained_model, test_ds):
-    """Deepchecks WeakSegmentsPerformance must run successfully and produce a
-    result. We do NOT hard-gate on its default 70%-of-overall condition because
-    scale_pos_weight tuning (Phase 3) intentionally trades accuracy for recall —
-    accuracy-based weak segments will look worse than they are.
+def test_weak_segments_analysis_runs_and_reports(trained_model, test_ds):
+    """Smoke check: Deepchecks WeakSegmentsPerformance runs and emits a result.
 
-    Instead we gate on a relative threshold of 0.30 (worst segment ≥ 30% of
-    overall) AND inspect the result's segment count. A test that catches
-    catastrophic regressions without false-alarming on imbalance-aware models.
+    We do NOT hard-gate on any condition (neither Deepchecks' default 70%
+    nor a custom relative floor). Reason: at the model scale used here
+    (5625 train / 1407 test rows), Deepchecks routinely finds tiny
+    sub-segments (~10–30 rows) where the empirical ROC-AUC is 0.0 simply
+    because the segment has no positive examples or the predictions
+    happen to invert. Those are statistical artifacts of small samples,
+    not structural model defects. Phase 3's scale_pos_weight tuning
+    compounds this by intentionally over-predicting the positive class.
+
+    The hard regression gate is `test_evaluate_model.test_metrics_meet_baselines`
+    (overall roc_auc ≥ 0.78). This test exists only to verify that the
+    Deepchecks suite still installs and runs against our model — a check
+    on the dependency, not on the model.
     """
     check = WeakSegmentsPerformance(scorer="roc_auc", n_top_features=5)
     result = check.run(test_ds, trained_model)
-
-    # The result has a `value` dict with the segments + scores. As long as
-    # Deepchecks produced segments and didn't crash, the analysis is healthy.
-    assert result is not None, "WeakSegmentsPerformance returned no result"
-
-    # Optional: surface what was found for visibility in CI logs.
-    if result.value and result.value.get("weak_segments_list") is not None:
-        worst = result.value["weak_segments_list"]
-        if hasattr(worst, "iloc") and len(worst) > 0:
-            print(
-                f"\n[deepchecks] weakest segment score: "
-                f"{worst.iloc[0].get('Score', 'n/a')}"
-            )
+    assert result is not None
+    assert (
+        result.value.get("avg_score") is not None
+    ), "Deepchecks did not produce avg_score — API contract drift"
+    # Surface the actual numbers in CI logs (informational, never gated).
+    weak = result.value.get("weak_segments_list")
+    if weak is not None and len(weak) > 0:
+        worst = float(weak.iloc[0].get("Score", float("nan")))
+        overall = float(result.value["avg_score"])
+        print(
+            f"\n[deepchecks] worst-segment ROC-AUC = {worst:.4f}, "
+            f"overall = {overall:.4f} "
+            f"(informational, not gated — see docstring)"
+        )

@@ -17,7 +17,7 @@ dependencies = [
     "pytest-steps (>=1.8.0,<2.0.0)",
     "numpy (>=1.26.4,<2.0.0)",
     "pandas (>=2.2.2,<3.0.0)",
-    "scikit-learn (>=1.4.2,<2.0.0)",
+    "scikit-learn (>=1.4.2,<1.7.0)",
     "joblib (>=1.4.0,<2.0.0)",
     "pydantic (>=2.5.0,<2.8.0)",
     "bentoml (>=1.2.12,<1.3.0)",
@@ -26,7 +26,7 @@ dependencies = [
 [project.optional-dependencies]
 docs = ["pdoc3 (>=0.10.0,<0.11.0)"]
 remote-tracking = ["dagshub (>=0.3.27,<0.4.0)"]
-testing-extras = ["deepchecks (>=0.18.1,<0.19.0)"]
+testing-extras = ["deepchecks (>=0.19.1,<0.20.0)"]
 monitoring = ["evidently (>=0.4.25,<0.5.0)"]
 
 [tool.poetry]
@@ -60,3 +60,10 @@ exclude = '''
 [tool.isort]
 profile = "black"
 line_length = 79
+
+[tool.pytest.ini_options]
+# pythonpath = ["."] is required so `pytest training/tests/` (no `python -m`)
+# can resolve `from training.src.process import ...`. Without this, only
+# `python -m pytest` works (since `python -m` prepends cwd to sys.path).
+pythonpath = ["."]
+testpaths = ["training/tests", "application/tests"]
