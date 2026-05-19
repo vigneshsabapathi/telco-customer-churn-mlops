@@ -27,7 +27,10 @@ jobs:
         # so re-download from the IBM mirror. See Phase 2 Obsidian note.
         run: |
           mkdir -p data/raw
-          curl -sL -o data/raw/Telco-Customer-Churn.csv \
+          # -f fails the step on HTTP 4xx/5xx instead of silently writing
+          # the error page into Telco-Customer-Churn.csv (which would
+          # surface much later as an opaque pandas.errors.ParserError).
+          curl -fsSL -o data/raw/Telco-Customer-Churn.csv \
             https://raw.githubusercontent.com/IBM/telco-customer-churn-on-icp4d/master/data/Telco-Customer-Churn.csv
           wc -l data/raw/Telco-Customer-Churn.csv
 

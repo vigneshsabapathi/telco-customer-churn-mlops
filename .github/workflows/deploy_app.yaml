@@ -32,7 +32,9 @@ jobs:
       - name: Fetch raw dataset
         run: |
           mkdir -p data/raw
-          curl -sL -o data/raw/Telco-Customer-Churn.csv \
+          # -f fails the step on HTTP errors instead of writing an HTML
+          # error page into the CSV (same rationale as test_code.yaml).
+          curl -fsSL -o data/raw/Telco-Customer-Churn.csv \
             https://raw.githubusercontent.com/IBM/telco-customer-churn-on-icp4d/master/data/Telco-Customer-Churn.csv
 
       - name: Train model (max_evals=100 — production hyperopt budget)
