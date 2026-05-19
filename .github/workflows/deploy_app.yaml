@@ -73,22 +73,21 @@ jobs:
         # Every Bento ships with a generated Dockerfile at
         # <bento_path>/env/docker/Dockerfile — build it directly to dodge the
         # broken wrapper. Same artifact, no version bump needed.
-        id: containerize
+        # NB: `bentoml get --output tag` doesn't exist in 1.2 (only json|yaml|path),
+        # so we tag the local image as churn_service:latest and let the next
+        # step re-tag for GHCR.
         run: |
           BENTO_PATH=$(bentoml get churn_service:latest --output path)
-          BENTO_TAG=$(bentoml get churn_service:latest --output tag)
           echo "bento_path=${BENTO_PATH}"
-          echo "bento_tag=${BENTO_TAG}"
           test -f "${BENTO_PATH}/env/docker/Dockerfile" || {
             echo "no Dockerfile at ${BENTO_PATH}/env/docker/Dockerfile" >&2
             ls -la "${BENTO_PATH}/env/docker/" >&2 || true
             exit 1
           }
           docker build \
-            -t "${BENTO_TAG}" \
+            -t churn_service:latest \
             -f "${BENTO_PATH}/env/docker/Dockerfile" \
             "${BENTO_PATH}"
-          echo "bento_tag=${BENTO_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -101,9 +100,8 @@ jobs:
         run: |
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           IMAGE_BASE="${{ env.REGISTRY }}/${OWNER_LC}/${{ env.IMAGE_NAME }}"
-          BENTO_TAG="${{ steps.containerize.outputs.bento_tag }}"
-          docker tag "${BENTO_TAG}" "${IMAGE_BASE}:${{ github.sha }}"
-          docker tag "${BENTO_TAG}" "${IMAGE_BASE}:latest"
+          docker tag churn_service:latest "${IMAGE_BASE}:${{ github.sha }}"
+          docker tag churn_service:latest "${IMAGE_BASE}:latest"
           docker push "${IMAGE_BASE}:${{ github.sha }}"
           docker push "${IMAGE_BASE}:latest"
           echo "Pushed ${IMAGE_BASE}:{${{ github.sha }},latest}"
