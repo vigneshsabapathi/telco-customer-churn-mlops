@@ -75,9 +75,10 @@ def test_customer_rejects_wrong_types():
 def _read_training_columns() -> list:
     """The 31 columns that process.py emits — the inference-time transform
     MUST produce the same set in the same order."""
-    x_train_path = Path(
-        "C:/Data/Project/churn-mlops/data/processed/X_train.csv"
-    )
+    # Anchored to the test file's location so this works on any machine /
+    # OS, not just the author's C:\ drive.
+    repo_root = Path(__file__).resolve().parents[2]
+    x_train_path = repo_root / "data" / "processed" / "X_train.csv"
     if not x_train_path.exists():
         pytest.skip("X_train.csv missing — run process.py / dvc repro first.")
     return list(pd.read_csv(x_train_path, nrows=1).columns)
@@ -87,7 +88,7 @@ def test_transform_data_produces_31_columns():
     from application.src.create_service import Customer, transform_data
 
     c = Customer()
-    df = pd.DataFrame([c.dict()])
+    df = pd.DataFrame([c.model_dump()])
     X = transform_data(df)
 
     # Numpy ndarray of shape (1, 31)
@@ -103,7 +104,7 @@ def test_transform_data_column_names_match_training():
 
     expected = _read_training_columns()
     c = Customer()
-    df = pd.DataFrame([c.dict()])
+    df = pd.DataFrame([c.model_dump()])
     X_df = transform_data_with_columns(df)
 
     assert list(X_df.columns) == expected, (
@@ -132,7 +133,7 @@ def test_transform_data_handles_multiple_categorical_levels():
         Contract="Two year",
         PaymentMethod="Mailed check",
     )
-    df = pd.DataFrame([rare_combo.dict()])
+    df = pd.DataFrame([rare_combo.model_dump()])
     X_df = transform_data_with_columns(df)
 
     expected = _read_training_columns()

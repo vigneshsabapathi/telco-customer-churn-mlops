@@ -125,7 +125,8 @@ def transform_data(df: pd.DataFrame) -> np.ndarray:
 def predict_logic(customer: "Customer", model_runner) -> np.ndarray:
     """Pure prediction: testable without BentoML. `model_runner` is any object
     exposing `.run(X) -> array_like`."""
-    df = pd.DataFrame([customer.dict()])
+    # Pydantic v2 — .model_dump() (v1's .dict() emits PydanticDeprecatedSince20).
+    df = pd.DataFrame([customer.model_dump()])
     X = transform_data(df)
     return np.asarray(model_runner.run(X))
 
@@ -155,7 +156,15 @@ try:
     def predict(customer: Customer) -> np.ndarray:
         return predict_logic(customer, _RunnerAdapter(_runner))
 
-except Exception:  # pragma: no cover  # noqa: BLE001
+except Exception as _e:  # pragma: no cover  # noqa: BLE001
     # Helpers (Customer, transform_data, predict_logic) stay usable even if
     # BentoML can't initialize a Service (e.g. no model in store during tests).
-    pass
+    # We still log the failure to stderr so production misconfigurations
+    # (wrong tag, corrupted runner, etc.) leave a breadcrumb instead of
+    # silently producing a module with no `service` attribute.
+    import sys
+
+    print(
+        f"create_service: BentoML service init skipped ({type(_e).__name__}: {_e})",
+        file=sys.stderr,
+    )

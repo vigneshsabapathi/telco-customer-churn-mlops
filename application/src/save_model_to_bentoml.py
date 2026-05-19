@@ -9,11 +9,14 @@ from __future__ import annotations
 import bentoml
 import hydra
 import joblib
+from hydra.utils import to_absolute_path
 from omegaconf import DictConfig
 
 
 def save_model(cfg: DictConfig) -> bentoml.Model:
-    model = joblib.load(cfg.model.path)
+    # to_absolute_path so this works whether invoked from repo root, from
+    # within training/, or from a test fixture's tmp cwd.
+    model = joblib.load(to_absolute_path(cfg.model.path))
     # signatures={"predict": ...} exposes runner.predict.run(X) on the loaded
     # runner. Without this, BentoML tries to call the model directly which
     # XGBClassifier doesn't support.
