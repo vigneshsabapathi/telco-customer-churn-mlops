@@ -4,3 +4,9 @@ docs/
 *.ipynb
 .pytest_cache/
 __pycache__/
+# Hydra writes to outputs/ on every script run and multirun/ for sweeps;
+# DVC doesn't read .gitignore so it'd otherwise scan these on every repro.
+outputs/
+multirun/
+.venv/
+mlruns/

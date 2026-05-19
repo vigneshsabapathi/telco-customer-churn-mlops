@@ -1,5 +1,8 @@
 [flake8]
-max-line-length = 99
+# black (line-length = 79 in pyproject.toml) is the single source of truth for
+# line length. flake8 explicitly ignores E501 ("line too long") so it doesn't
+# fight with black on string literals, URLs, etc. that black can't auto-wrap.
+max-line-length = 79
 extend-ignore = E203, W503, E501
 exclude =
     .git,
