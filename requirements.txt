@@ -29,6 +29,19 @@ pytest-steps==1.8.0
 requests==2.32.3
 deepchecks==0.19.1
 
+# --- monitoring (Phase 9) ---
+# evidently 0.4.x has a stable Report+DataDriftPreset API; 0.5+ rewrote it.
+# 0.4.33 brings in `multipart` 1.x which shadows `python-multipart` (bentoml
+# imports `multipart.multipart`), and bumps protobuf/opentelemetry past what
+# bentoml/streamlit/mlflow accept — the three pins below repair the resolve.
+evidently==0.4.33
+python-multipart>=0.0.9
+protobuf<5
+opentelemetry-api==1.20.0
+opentelemetry-sdk==1.20.0
+opentelemetry-semantic-conventions==0.41b0
+wrapt<2
+
 # --- dev: lint + hooks ---
 pre-commit==3.7.0
 black==24.4.0

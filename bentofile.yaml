@@ -26,6 +26,10 @@ exclude:
   # inside the container doesn't ImportError at runtime.
   - "application/src/create_app.py"
   - "application/src/save_model_to_bentoml.py"
+  # Phase 9 monitoring isn't a runtime concern — `evidently` is intentionally
+  # absent from the `python.packages` list below, which is what actually keeps
+  # it out of the image. `monitoring/` itself is already excluded by the
+  # explicit `include:` allowlist above; no extra exclude needed.
 
 python:
   # Mirror the runtime subset of requirements.txt — keep the image lean.

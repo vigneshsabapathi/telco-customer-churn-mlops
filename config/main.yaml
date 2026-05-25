@@ -47,3 +47,12 @@ tracking:
   # Credentials, when remote=true, must come from environment:
   #   MLFLOW_TRACKING_USERNAME
   #   MLFLOW_TRACKING_PASSWORD
+
+# Phase 9 — Evidently drift report shift magnitudes. Read by
+# `monitoring/drift_report.py` only; absent values fall back to the function
+# defaults so the script still runs with a pre-Phase-9 config.
+monitoring:
+  shift_monthly_pct: 0.15
+  month_to_month_share: 0.70
+  tenure_shrink_factor: 0.70
+  random_state: 42
