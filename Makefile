@@ -6,7 +6,10 @@
 # Default Python interpreter inside the project venv.
 VENV    ?= .venv
 PYTHON  := $(VENV)/Scripts/python.exe
-BENTOML := $(VENV)/Scripts/bentoml.exe
+# Invoke bentoml as a module rather than the Scripts/bentoml.exe launcher —
+# the launcher embeds an absolute path that breaks if the venv (or its parent
+# folder) is moved/renamed; `python -m bentoml` resolves via the interpreter.
+BENTOML := $(PYTHON) -m bentoml
 
 # Self-documenting help: `make` or `make help` lists targets with their descriptions.
 help:  ## Show this help
