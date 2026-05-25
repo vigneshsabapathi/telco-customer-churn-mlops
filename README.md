@@ -9,6 +9,7 @@
 ![python](https://img.shields.io/badge/python-3.10–3.12-blue?logo=python&logoColor=white)
 ![code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)
 ![ROC-AUC](https://img.shields.io/badge/ROC--AUC-≈0.84-success)
+[![license: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 <sub>XGBoost · DVC · Hydra · MLflow · Hyperopt · BentoML · Streamlit · Evidently · GitHub Actions · GHCR</sub>
 
@@ -227,11 +228,11 @@ The suite layers Pandera schema checks on the raw frame, Deepchecks model-qualit
 ## Roadmap
 
 - [x] Phases 1–9: scaffold → data → training → pipeline → tests → serving → containerize → CI/CD → monitoring
-- [ ] Phase 10 — polish: pdoc API docs, full `Makefile` targets, `LICENSE`
+- [x] Phase 10 — polish: pdoc API docs (`make docs`), full `Makefile` targets, `LICENSE`
 - [ ] Sibling projects: `heart-disease-mlops`, `nyc-taxi-mlops` (same template)
 
 ## Acknowledgements
 
 Dataset: [IBM Telco Customer Churn](https://github.com/IBM/telco-customer-churn-on-icp4d). Architecture inspired by a course capstone, hardened for production patterns (env-only secrets, leakage-free training, deploy gating, drift monitoring).
 
-<div align="center"><sub>Built by <a href="https://github.com/vigneshsabapathi">Vignesh Sabapathi</a> · <code>LICENSE</code> to be added in Phase 10</sub></div>
+<div align="center"><sub>Built by <a href="https://github.com/vigneshsabapathi">Vignesh Sabapathi</a> · <a href="LICENSE">MIT licensed</a></sub></div>

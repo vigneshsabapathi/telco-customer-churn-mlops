@@ -47,3 +47,9 @@ pre-commit==3.7.0
 black==24.4.0
 flake8==7.0.0
 isort==5.13.2
+
+# --- docs (Phase 10) ---
+# pdoc3 generates static HTML API docs from docstrings (`make docs`).
+# Pinned to 0.10.x — the 0.11+ line dropped Python 3.7 support and shuffled
+# the CLI; 0.10.0 matches the pyproject `docs` extra.
+pdoc3==0.10.0
